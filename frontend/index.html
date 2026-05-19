@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Email Header Analyzer</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600&family=IBM+Plex+Sans:wght@300;400;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/styles.css"/>
+</head>
+<body>
+<div class="wrap">
+ 
+  <!-- Page header -->
+  <header class="page-header">
+    <p class="eyebrow">Análisis forense · SMTP</p>
+    <h1>Email Header <strong>Analyzer</strong></h1>
+    <p class="subtitle">// SPF · DKIM · DMARC · Routing · Threat Assessment</p>
+  </header>
+ 
+  <!-- Input -->
+  <div class="card">
+    <span class="card-label">Entrada</span>
+ 
+    <div class="drop-zone" id="drop-zone">
+      <div class="drop-icon">📎</div>
+      <div class="drop-text">
+        Arrastra un archivo o <strong id="drop-browse">selecciona uno</strong><br/>
+        <span class="drop-formats">.EML · .MSG · .TXT · .MHT</span>
+      </div>
+      <div id="file-pill-wrap"></div>
+    </div>
+    <input type="file" id="file-input" accept=".eml,.msg,.txt,.mht,.mhtml"/>
+ 
+    <div class="divider">o pega manualmente</div>
+ 
+    <textarea
+      id="header-input"
+      placeholder="Received: from mail.example.com ...&#10;From: sender@example.com&#10;Authentication-Results: ...">
+    </textarea>
+ 
+    <div class="btn-row">
+      <button class="btn-primary" id="analyze-btn" disabled>Analizar</button>
+      <button class="btn-ghost" id="example-btn">Ejemplo</button>
+      <button class="btn-ghost" id="clear-btn">Limpiar</button>
+      <span class="char-count" id="char-count">0 líneas</span>
+    </div>
+  </div>
+ 
+  <!-- Loader -->
+  <div id="status-bar">
+    <div class="spinner"></div>
+    <span id="status-text">Analizando...</span>
+  </div>
+ 
+  <!-- Error -->
+  <div class="error-box" id="error-box"></div>
+ 
+  <!-- Results -->
+  <div id="results">
+ 
+    <!-- N1: Veredicto -->
+    <div id="verdict-card" class="verdict-card">
+      <div class="verdict-eyebrow">Veredicto de seguridad</div>
+      <div class="verdict-label" id="verdict-label">—</div>
+      <div class="verdict-reasons" id="verdict-reasons"></div>
+    </div>
+ 
+    <!-- N2: Semáforo -->
+    <div class="card">
+      <div class="section-title">Señales de autenticación</div>
+      <div class="signal-grid" id="signal-grid"></div>
+    </div>
+ 
+    <!-- N3: Timeline -->
+    <div class="card">
+      <div class="section-title">Ruta de entrega</div>
+      <div class="timeline" id="timeline"></div>
+    </div>
+ 
+    <!-- N4: Metadata -->
+    <div class="card">
+      <div class="section-title">Metadatos del mensaje</div>
+      <table class="meta-table" id="meta-table"></table>
+    </div>
+ 
+    <!-- N5: Raw -->
+    <div class="card">
+      <div class="raw-head">
+        <div class="section-title">Cabecera original</div>
+        <span class="raw-toggle" id="raw-toggle">Mostrar ▾</span>
+      </div>
+      <div class="raw-block" id="raw-block"></div>
+    </div>
+ 
+  </div><!-- /results -->
+ 
+  <footer class="page-footer">
+    Conectado a <code>http://localhost:8000</code> · FastAPI Backend
+  </footer>
+ 
+</div><!-- /wrap -->
+ 
+<script src="js/upload.js"></script>
+<script src="js/api.js"></script>
+<script src="js/render.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
