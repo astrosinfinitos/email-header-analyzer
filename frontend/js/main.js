@@ -22,12 +22,7 @@ X-Mailer: Thunderbird 102.0`;
 
 /* ── Estado de la UI ── */
 function onInputChange() {
-  const val   = document.getElementById('header-input').value;
-  const lines = val.trim() ? val.split('\n').length : 0;
-
-  document.getElementById('char-count').textContent =
-    lines ? `${lines} líneas · ${val.length} ch` : '0 líneas';
-
+  const val = document.getElementById('header-input').value;
   document.getElementById('analyze-btn').disabled = !val.trim();
 }
 
@@ -64,7 +59,7 @@ function toggleRaw() {
 function loadExample() {
   document.getElementById('header-input').value = EXAMPLE_HEADER;
   document.getElementById('file-pill-wrap').innerHTML = '';
-  onInputChange();
+  onInputChange(); // ← añade esta línea
   clearResults();
 }
 
@@ -107,7 +102,6 @@ async function analyze() {
 /* ── Inicialización ── */
 document.addEventListener('DOMContentLoaded', () => {
   initUpload();
-
   document.getElementById('header-input').addEventListener('input', onInputChange);
   document.getElementById('analyze-btn').addEventListener('click', analyze);
   document.getElementById('example-btn').addEventListener('click', loadExample);

@@ -1,5 +1,3 @@
-// js/render.js
-
 /* ── Utilidades ── */
 function esc(s) {
   return String(s)
@@ -7,7 +5,7 @@ function esc(s) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 }
-
+ 
 function authClass(val) {
   if (!val || val === 'none') return 'none';
   val = val.toLowerCase();
@@ -16,33 +14,37 @@ function authClass(val) {
   if (val === 'softfail') return 'warn';
   return 'none';
 }
-
+ 
 /* ── N1: Veredicto ── */
 function renderVerdict(data) {
   const auth  = data.auth || {};
   const spf   = (auth.spf   || 'none').toLowerCase();
   const dkim  = (auth.dkim  || 'none').toLowerCase();
   const dmarc = (auth.dmarc || 'none').toLowerCase();
-
-  const fails    = [spf, dkim, dmarc].filter(v => v === 'fail').length;
-  const passes   = [spf, dkim, dmarc].filter(v => v === 'pass').length;
-  const softfails = [spf, dkim, dmarc].filter(v => v === 'softfail').length;
-
+ 
   const spamMatch = (data.spam_score || '').match(/-?[\d.]+/);
   const spamScore = spamMatch ? parseFloat(spamMatch[0]) : null;
-
+  const isSpam    = spamScore !== null && spamScore > 3;
+ 
+  const fails     = [spf, dkim, dmarc].filter(v => v === 'fail').length;
+  const passes    = [spf, dkim, dmarc].filter(v => v === 'pass').length;
+  const nones     = [spf, dkim, dmarc].filter(v => v === 'none').length;
+  const softfails = [spf, dkim, dmarc].filter(v => v === 'softfail').length;
+ 
   let level, label, reasons = [];
-
-  if (fails >= 2 || (spamScore !== null && spamScore > 3)) {
+ 
+  if (fails >= 1 || isSpam) {
     level = 'bad';  label = 'PELIGROSO';
-  } else if (fails === 1 || softfails >= 1 || (spamScore !== null && spamScore > 1)) {
+  } else if (softfails >= 1 || nones >= 2) {
     level = 'warn'; label = 'SOSPECHOSO';
+  } else if (nones === 1) {
+    level = 'warn'; label = 'INDETERMINADO';
   } else if (passes === 3) {
     level = 'ok';   label = 'LEGÍTIMO';
   } else {
     level = 'warn'; label = 'INDETERMINADO';
   }
-
+ 
   if (spf   === 'pass')     reasons.push('✓ SPF pass');
   if (dkim  === 'pass')     reasons.push('✓ DKIM pass');
   if (dmarc === 'pass')     reasons.push('✓ DMARC pass');
@@ -50,24 +52,26 @@ function renderVerdict(data) {
   if (dkim  === 'fail')     reasons.push('✗ DKIM fail');
   if (dmarc === 'fail')     reasons.push('✗ DMARC fail');
   if (spf   === 'softfail') reasons.push('⚠ SPF softfail');
+  if (dkim  === 'none')     reasons.push('⚠ DKIM no configurado');
+  if (dmarc === 'none')     reasons.push('⚠ DMARC no configurado');
   if (spamScore !== null)   reasons.push(`Score spam: ${spamScore}`);
-
+ 
   const card = document.getElementById('verdict-card');
   card.className = `verdict-card ${level}`;
   document.getElementById('verdict-label').textContent = label;
   document.getElementById('verdict-reasons').innerHTML =
     reasons.map(r => `<span>${esc(r)}</span>`).join('');
 }
-
+ 
 /* ── N2: Semáforo ── */
 function renderSignals(data) {
   const auth   = data.auth || {};
   const protos = ['spf', 'dkim', 'dmarc'];
-
+ 
   const spamRaw   = data.spam_score || '';
   const spamMatch = spamRaw.match(/-?[\d.]+/);
   let spamHtml    = '';
-
+ 
   if (spamMatch) {
     const score = parseFloat(spamMatch[0]);
     const pct   = Math.min(100, Math.max(0, ((score + 5) / 15) * 100));
@@ -85,11 +89,11 @@ function renderSignals(data) {
         </div>
       </div>`;
   }
-
+ 
   const hopCount = (data.hops || []).length;
   const hopCls   = hopCount <= 3 ? 'ok' : hopCount <= 6 ? 'warn' : 'bad';
   const hopNote  = hopCount <= 3 ? 'Ruta normal' : hopCount <= 6 ? 'Ruta larga' : 'Ruta inusual';
-
+ 
   document.getElementById('signal-grid').innerHTML =
     protos.map(p => {
       const val = (auth[p] || 'none');
@@ -107,33 +111,36 @@ function renderSignals(data) {
       <div class="signal-note">${hopNote}</div>
     </div>`;
 }
-
+ 
 /* ── N3: Timeline ── */
 function renderTimeline(data) {
   const hops = data.hops || [];
   const el   = document.getElementById('timeline');
-
+ 
   if (!hops.length) {
     el.innerHTML = '<span style="color:var(--dim);font-size:11px">No se encontraron saltos Received:</span>';
     return;
   }
-
+ 
   el.innerHTML = hops.map((h, i) => {
-    const raw       = h.raw || '';
-    const isAnomaly = raw.toLowerCase().includes('unknown') ||
-                      (h.ip && (h.ip.startsWith('192.168.') || h.ip.startsWith('10.')));
-
-    const serverMatch = raw.match(/from\s+([^\s(]+)/i);
-    const server      = serverMatch ? serverMatch[1] : 'servidor desconocido';
-
-    const tsMatch = raw.match(/;\s*(.+)$/m);
-    const ts      = tsMatch ? tsMatch[1].trim().slice(0, 32) : '';
-
+    const raw     = h.raw || '';
     const isFirst = i === 0;
     const isLast  = i === hops.length - 1;
-    const label   = isFirst ? ' · ORIGEN' : isLast ? ' · DESTINO' : '';
+ 
+    const isAnomaly = !isLast && (
+      raw.toLowerCase().includes('unknown') ||
+      (h.ip && (h.ip.startsWith('192.168.') || h.ip.startsWith('10.')))
+    );
+ 
+    const serverMatch = raw.match(/from\s+([^\s(]+)/i);
+    const server      = serverMatch ? serverMatch[1] : 'servidor desconocido';
+ 
+    const tsMatch = raw.match(/;\s*(.+)$/m);
+    const ts      = tsMatch ? tsMatch[1].trim().slice(0, 32) : '';
+ 
+    const label     = isFirst ? ' · ORIGEN' : isLast ? ' · DESTINO' : '';
     const connector = !isLast ? `<div class="tl-connector">↓</div>` : '';
-
+ 
     return `
       <div class="tl-hop${isAnomaly ? ' anomaly' : ''}">
         <div class="tl-dot"></div>
@@ -152,7 +159,7 @@ function renderTimeline(data) {
       </div>${connector}`;
   }).join('');
 }
-
+ 
 /* ── N4: Metadata ── */
 function renderMeta(data) {
   const fields = [
@@ -163,7 +170,7 @@ function renderMeta(data) {
     ['Message-ID', data.message_id || '—'],
     ['Cliente',    data.mailer     || '—'],
   ];
-
+ 
   document.getElementById('meta-table').innerHTML =
     fields.map(([k, v]) => `<tr><td>${k}</td><td>${esc(v)}</td></tr>`).join('');
 }
