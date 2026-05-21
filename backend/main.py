@@ -1,7 +1,9 @@
+import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from parser import parse_header
+from reputation import check_all_ips
 
 app = FastAPI(title="Email Header Analyzer")
 
@@ -18,5 +20,13 @@ class HeaderRequest(BaseModel):
 
 
 @app.post("/analyze")
-def analyze(req: HeaderRequest):
-    return parse_header(req.raw_header)
+async def analyze(req: HeaderRequest):
+    data = parse_header(req.raw_header)
+
+    ips = [hop["ip"] for hop in data.get("hops", []) if hop.get("ip")]
+    print(f"[main] IPs extraídas de los hops: {ips}")
+
+    data["reputation"] = await check_all_ips(ips)
+    print(f"[main] Reputación devuelta: {data['reputation']}")
+
+    return data
