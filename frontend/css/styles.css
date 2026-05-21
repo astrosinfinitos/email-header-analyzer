@@ -395,6 +395,44 @@ button {
   font-size: 12px; letter-spacing: 2px; color: var(--dim);
   cursor: pointer; text-transform: uppercase; transition: color .2s;
 }
+
+/* ── Reputación ── */
+.reputation-grid { display: flex; flex-direction: column; gap: 12px; }
+
+.rep-item {
+  background: var(--s2); border: 1px solid var(--border);
+  border-radius: 2px; padding: 14px 16px;
+}
+
+.rep-head {
+  display: flex; align-items: center;
+  gap: 8px; margin-bottom: 4px; flex-wrap: wrap;
+}
+
+.rep-ip { font-size: 13px; color: var(--bright); font-weight: 600; }
+
+.rep-isp { font-size: 11px; color: var(--dim); margin-bottom: 12px; }
+
+.rep-scores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.rep-score-item {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 2px; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+
+.rep-source { font-size: 10px; letter-spacing: 2px; color: var(--dim); text-transform: uppercase; }
+
+.rep-val { font-size: 18px; font-weight: 600; }
+.rep-val.ok   { color: var(--ok); }
+.rep-val.warn { color: var(--warn); }
+.rep-val.bad  { color: var(--bad); }
+
+.rep-sub { font-size: 11px; color: var(--dim); }
  
 .raw-toggle:hover { color: var(--text); }
  

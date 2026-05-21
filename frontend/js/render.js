@@ -89,6 +89,54 @@ function renderSignals(data) {
         </div>
       </div>`;
   }
+
+/* ── N2b: Reputación de IPs ── */
+function renderReputation(data) {
+  const reps = data.reputation || [];
+  if (!reps.length) return;
+
+  let container = document.getElementById('reputation-grid');
+  if (!container) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="section-title">Reputación de IPs</div>
+      <div id="reputation-grid" class="reputation-grid"></div>`;
+    document.getElementById('signal-grid').closest('.card').after(card);
+    container = document.getElementById('reputation-grid');
+  }
+
+  container.innerHTML = reps.map(r => {
+    const abuse = r.abuseipdb || {};
+    const vt    = r.virustotal || {};
+    const score = abuse.score ?? 0;
+    const cls   = score === 0 ? 'ok' : score < 25 ? 'warn' : 'bad';
+    const vtMalicious = vt.malicious ?? 0;
+    const vtCls = vtMalicious === 0 ? 'ok' : vtMalicious < 3 ? 'warn' : 'bad';
+
+    return `
+      <div class="rep-item">
+        <div class="rep-head">
+          <span class="rep-ip">${esc(r.ip)}</span>
+          ${abuse.country ? `<span class="tl-tag">${esc(abuse.country)}</span>` : ''}
+          ${abuse.is_tor  ? `<span class="tl-tag" style="color:var(--bad)">TOR</span>` : ''}
+        </div>
+        <div class="rep-isp">${esc(abuse.isp || '—')}</div>
+        <div class="rep-scores">
+          <div class="rep-score-item">
+            <span class="rep-source">AbuseIPDB</span>
+            <span class="rep-val ${cls}">${score}%</span>
+            <span class="rep-sub">${abuse.reports ?? 0} reportes</span>
+          </div>
+          <div class="rep-score-item">
+            <span class="rep-source">VirusTotal</span>
+            <span class="rep-val ${vtCls}">${vtMalicious} maliciosos</span>
+            <span class="rep-sub">${vt.harmless ?? 0} limpios</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
  
   const hopCount = (data.hops || []).length;
   const hopCls   = hopCount <= 3 ? 'ok' : hopCount <= 6 ? 'warn' : 'bad';
