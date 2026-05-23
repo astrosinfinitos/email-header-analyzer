@@ -38,12 +38,15 @@
       placeholder="Received: from mail.example.com ...&#10;From: sender@example.com&#10;Authentication-Results: ...">
     </textarea>
  
+    <div class="disclaimer">
+      <span class="disclaimer-icon">⚠</span>
+      Esta herramienta es un apoyo al análisis y no un sistema de decisión automática.
+      Los resultados deben ser interpretados y validados por el analista responsable.
+    </div>
+ 
     <div class="btn-row">
-
-      <!--Ninguno de los botones no es funcional ahora mismo-->
-
       <button class="btn-primary" id="analyze-btn" disabled>Analizar</button>
-      <button class="btn-ghost" id="example-btn">Ejemplo</button> <!--No entiendo para qué es esto.-->
+      <button class="btn-ghost" id="example-btn">Ejemplo</button>
       <button class="btn-ghost" id="clear-btn">Limpiar</button>
     </div>
   </div>
@@ -94,14 +97,18 @@
       <div class="raw-block" id="raw-block"></div>
     </div>
  
+    <!-- Botón generar reporte -->
+    <div id="report-btn-wrap" class="report-btn-wrap">
+      <button class="btn-primary" id="report-btn">Generar reporte</button>
+    </div>
+ 
+    <!-- Reporte -->
+    <div id="report-section" class="card">
+      <div class="section-title">Reporte de seguridad</div>
+      <div id="report-content" class="report-content"></div>
+    </div>
+ 
   </div><!-- /results -->
-
-  <!-- Aviso de responsabilidad -->
-  <div class="disclaimer">
-    <span class="disclaimer-icon">⚠</span>
-    Esta herramienta es un apoyo al análisis y no un sistema de decisión automática.
-    Los resultados deben ser interpretados y validados por el analista responsable.
- </div>
  
   <footer class="page-footer">
     Conectado a <code>http://localhost:8000</code> · FastAPI Backend
@@ -113,8 +120,6 @@
 <script src="js/api.js"></script>
 <script src="js/render.js"></script>
 <script src="js/main.js"></script>
-
-<!--Para futuras versiones hay que mejorar el diseño. Debe ser responsive.-->
-
 </body>
 </html>
+ 

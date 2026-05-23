@@ -1,4 +1,6 @@
-// js/main.js
+const REPORT_URL = 'http://localhost:8000/report';
+
+let lastAnalysis = null;
 
 const EXAMPLE_HEADER = `From: sender@example.com
 To: recipient@yourdomain.com
@@ -46,6 +48,10 @@ function clearResults() {
   document.getElementById('results').classList.remove('visible');
   document.getElementById('error-box').classList.remove('visible');
   document.getElementById('status-bar').classList.remove('visible');
+  document.getElementById('report-btn-wrap').style.display = 'none';
+  document.getElementById('report-section').style.display = 'none';
+  document.getElementById('report-content').textContent = '';
+  lastAnalysis = null;
 }
 
 function toggleRaw() {
@@ -55,11 +61,11 @@ function toggleRaw() {
   toggle.textContent = isOpen ? 'Ocultar ▴' : 'Mostrar ▾';
 }
 
-/* ── Acciones de botones ── */
+/* ── Botones ── */
 function loadExample() {
   document.getElementById('header-input').value = EXAMPLE_HEADER;
   document.getElementById('file-pill-wrap').innerHTML = '';
-  onInputChange(); // ← añade esta línea
+  onInputChange();
   clearResults();
 }
 
@@ -71,7 +77,7 @@ function clearAll() {
   clearResults();
 }
 
-/* ── Análisis principal ── */
+/* ── Análisis ── */
 async function analyze() {
   const raw = document.getElementById('header-input').value.trim();
   if (!raw) return;
@@ -92,6 +98,9 @@ async function analyze() {
     document.getElementById('raw-block').textContent = raw;
     document.getElementById('results').classList.add('visible');
 
+    lastAnalysis = data;
+    document.getElementById('report-btn-wrap').style.display = 'block';
+
   } catch (err) {
     showError(err.message + ' — Asegúrate de que FastAPI está corriendo en localhost:8000');
   } finally {
@@ -100,12 +109,45 @@ async function analyze() {
   }
 }
 
+/* ── Reporte ── */
+async function generateReport() {
+  if (!lastAnalysis) return;
+
+  const btn = document.getElementById('report-btn');
+  btn.disabled = true;
+  btn.textContent = 'Generando...';
+  setStatus('Generando reporte con IA...');
+
+  try {
+    const res = await fetch(REPORT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ analysis: lastAnalysis }),
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    document.getElementById('report-content').textContent = data.content;
+    document.getElementById('report-section').style.display = 'block';
+
+  } catch (err) {
+    showError('Error generando el reporte: ' + err.message);
+  } finally {
+    hideStatus();
+    btn.disabled = false;
+    btn.textContent = 'Generar reporte';
+  }
+}
+
 /* ── Inicialización ── */
 document.addEventListener('DOMContentLoaded', () => {
   initUpload();
+
   document.getElementById('header-input').addEventListener('input', onInputChange);
   document.getElementById('analyze-btn').addEventListener('click', analyze);
   document.getElementById('example-btn').addEventListener('click', loadExample);
   document.getElementById('clear-btn').addEventListener('click', clearAll);
   document.getElementById('raw-toggle').addEventListener('click', toggleRaw);
+  document.getElementById('report-btn').addEventListener('click', generateReport);
 });

@@ -189,6 +189,61 @@ button {
   animation: spin .7s linear infinite;
   flex-shrink: 0;
 }
+
+/* ── File input estilizado ── */
+#file-input {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  padding: 6px 0;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+#file-input::file-selector-button {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: var(--a2);
+  color: #aad4ff;
+  border: none;
+  border-radius: 2px;
+  padding: 5px 12px;
+  margin-right: 12px;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+#file-input::file-selector-button:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+#file-input::file-selector-button {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: var(--a2);
+  color: #aad4ff;
+  border: none;
+  border-radius: 2px;
+  padding: 5px 12px;
+  margin-right: 12px;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+#file-input::file-selector-button:hover {
+  background: var(--accent);
+  color: #fff;
+}
  
 /* ── Error ── */
 .error-box {
@@ -445,6 +500,24 @@ button {
 }
  
 .raw-block.visible { display: block; }
+
+/* ── Reporte ── */
+.report-btn-wrap {
+  display: none;
+  margin-bottom: 14px;
+}
+
+#report-section {
+  display: none;
+}
+
+.report-content {
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--bright);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
  
 /* ── Footer ── */
 .page-footer {
