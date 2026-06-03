@@ -92,6 +92,7 @@ async function analyze() {
     renderVerdict(data);
     renderSignals(data);
     renderReputation(data);
+    renderUrls(data);
     renderTimeline(data);
     renderMeta(data);
 

@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from parser import parse_header
 from reputation import check_all_ips
 from report import generate_report
+from url_analyzer import analyze_all_urls
 
 app = FastAPI(title="Email Header Analyzer")
 
@@ -15,18 +16,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 class HeaderRequest(BaseModel):
     raw_header: str
+
 
 class ReportRequest(BaseModel):
     analysis: dict
 
+
 @app.post("/analyze")
 async def analyze(req: HeaderRequest):
     data = parse_header(req.raw_header)
+
     ips = [hop["ip"] for hop in data.get("hops", []) if hop.get("ip")]
     data["reputation"] = await check_all_ips(ips)
+
+    # Analiza URLs extraídas del cuerpo
+    if data.get("urls"):
+        data["urls"] = await analyze_all_urls(data["urls"])
+
     return data
+
 
 @app.post("/report")
 def report(req: ReportRequest):

@@ -210,6 +210,66 @@ function renderTimeline(data) {
       </div>${connector}`;
   }).join('');
 }
+
+/* ── URLs ── */
+function renderUrls(data) {
+  const urls = data.urls || [];
+
+  const existing = document.getElementById('urls-card');
+  if (existing) existing.remove();
+  if (!urls.length) return;
+
+  const riskLabel = { low: 'BAJO', medium: 'MEDIO', high: 'ALTO' };
+  const riskClass = { low: 'ok', medium: 'warn', high: 'bad' };
+
+  const flagLabels = {
+    url_acortada:           'URL acortada',
+    ip_directa:             'IP directa',
+    numeros_en_dominio:     'Números en dominio',
+    multiples_subdominios:  'Múltiples subdominios',
+    tld_sospechoso:         'TLD sospechoso',
+    resuelta:               'URL resuelta',
+    vt_malicioso:           'VirusTotal: malicioso',
+    vt_sospechoso:          'VirusTotal: sospechoso',
+  };
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.id = 'urls-card';
+  card.innerHTML = `
+    <div class="section-title">Enlaces detectados (${urls.length})</div>
+    <div class="urls-list">
+      ${urls.map(u => {
+        const cls = riskClass[u.risk] || 'none';
+        const vt  = u.virustotal;
+        return `
+          <div class="url-item ${cls}">
+            <div class="url-head">
+              <span class="url-risk ${cls}">${riskLabel[u.risk] || u.risk}</span>
+              <span class="url-domain">${esc(u.domain || '—')}</span>
+            </div>
+            <div class="url-raw">${esc(u.url)}</div>
+            ${u.resolved_url ? `<div class="url-resolved">→ ${esc(u.resolved_url)}</div>` : ''}
+            ${u.flags.length ? `
+              <div class="url-flags">
+                ${u.flags.map(f => `
+                  <span class="url-flag">${flagLabels[f] || f}</span>
+                `).join('')}
+              </div>` : ''}
+            ${vt && !vt.error && vt.status !== 'not_found' ? `
+              <div class="url-vt">
+                <span class="rep-source">VirusTotal</span>
+                <span class="rep-val ${vt.malicious > 0 ? 'bad' : 'ok'}">
+                  ${vt.malicious} maliciosos
+                </span>
+                <span class="rep-sub">${vt.harmless ?? 0} limpios</span>
+              </div>` : ''}
+          </div>`;
+      }).join('')}
+    </div>`;
+
+  document.getElementById('timeline').closest('.card').after(card);
+}
  
 /* ── N4: Metadata ── */
 function renderMeta(data) {

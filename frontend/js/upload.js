@@ -31,8 +31,10 @@ function onFileSelected(file) {
 
   const reader = new FileReader();
   reader.onload = (e) => {
-    const header = extractHeader(e.target.result);
-    document.getElementById('header-input').value = header;
+    const raw = e.target.result;
+    console.log('FileReader resultado:', raw.length, 'chars');
+    console.log('Últimos 100 chars:', raw.slice(-100));
+    document.getElementById('header-input').value = raw;
     onInputChange();
     clearResults();
     analyze();

@@ -426,6 +426,60 @@ button {
   text-align: center; font-size: 12px;
   color: var(--dim); letter-spacing: 1px; padding: 3px 0;
 }
+
+/* ── URLs ── */
+.urls-list { display: flex; flex-direction: column; gap: 10px; }
+
+.url-item {
+  background: var(--s2); border: 1px solid var(--border);
+  border-radius: 2px; padding: 12px 14px;
+  border-left: 3px solid var(--dim);
+}
+.url-item.ok   { border-left-color: var(--ok); }
+.url-item.warn { border-left-color: var(--warn); }
+.url-item.bad  { border-left-color: var(--bad); }
+
+.url-head {
+  display: flex; align-items: center;
+  gap: 10px; margin-bottom: 6px;
+}
+
+.url-risk {
+  font-size: 9px; letter-spacing: 2px;
+  text-transform: uppercase; padding: 2px 8px;
+  border-radius: 2px; font-weight: 600;
+}
+.url-risk.ok   { background: #0d1f11; color: var(--ok); }
+.url-risk.warn { background: #1f1200; color: var(--warn); }
+.url-risk.bad  { background: #1f0a09; color: var(--bad); }
+
+.url-domain { font-size: 12px; color: var(--bright); font-weight: 600; }
+
+.url-raw {
+  font-size: 10px; color: var(--text);
+  word-break: break-all; margin-bottom: 4px;
+}
+
+.url-resolved {
+  font-size: 10px; color: var(--accent);
+  word-break: break-all; margin-bottom: 6px;
+}
+
+.url-flags {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;
+}
+
+.url-flag {
+  font-size: 9px; letter-spacing: 1px;
+  padding: 2px 8px; border-radius: 2px;
+  border: 1px solid var(--border2); color: var(--warn);
+}
+
+.url-vt {
+  display: flex; align-items: center;
+  gap: 10px; margin-top: 8px;
+  padding-top: 8px; border-top: 1px solid var(--border);
+}
  
 /* ── N4: Metadata ── */
 .meta-table { width: 100%; border-collapse: collapse; }
