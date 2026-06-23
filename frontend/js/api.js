@@ -1,6 +1,6 @@
 // js/api.js
 
-const API_URL = 'http://localhost:8000/analyze';
+const API_URL = 'https://email-header-analyzer-j40x.onrender.com/analyze';
 
 async function analyzeHeader(rawHeader) {
   const response = await fetch(API_URL, {

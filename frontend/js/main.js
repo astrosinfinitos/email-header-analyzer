@@ -1,4 +1,4 @@
-const REPORT_URL = 'http://localhost:8000/report';
+const REPORT_URL = 'https://email-header-analyzer-j40x.onrender.com/report';
 
 let lastAnalysis = null;
 
