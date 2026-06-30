@@ -277,5 +277,16 @@ style: improve verdict card contrast
 
 ## Licencia
 
-MIT © [astrosinfinitos](https://github.com/astrosinfinitos)
+Este proyecto se publica bajo una licencia de uso no comercial.
+
+Se permite usar, estudiar, modificar y ejecutar el software con fines personales, educativos, académicos, de investigación o evaluación interna, siempre que se mantenga el aviso de copyright y la atribución al autor original.
+
+No se permite vender, sublicenciar, redistribuir con fines comerciales, integrar en productos o servicios comerciales, ofrecer como servicio a terceros ni utilizar este software para obtener beneficio económico directo o indirecto sin autorización previa y por escrito del titular del proyecto.
+
+Para usos comerciales, integraciones empresariales, servicios gestionados, redistribución comercial o acuerdos de licencia específicos, contacta con el autor.
+
+Copyright © 2026 [astrosinfinitos](https://github.com/astrosinfinitos). Todos los derechos reservados para usos comerciales.
+
+El software se proporciona "tal cual", sin garantías de ningún tipo.
+
 ```
