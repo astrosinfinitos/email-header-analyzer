@@ -1,6 +1,7 @@
+```markdown
 # Email Header Analyzer
 
-Analiza cabeceras de correo electrónico y detecta spoofing, fallos de autenticación y rutas sospechosas. Veredicto visual inmediato con desglose de SPF, DKIM, DMARC y hops.
+Analiza cabeceras de correo electrónico y detecta spoofing, fallos de autenticación, rutas sospechosas, reputación de IPs y URLs potencialmente peligrosas. Ofrece un veredicto visual inmediato con desglose de SPF, DKIM, DMARC, hops, reputación y reporte de seguridad.
 
 ---
 
@@ -10,8 +11,12 @@ Analiza cabeceras de correo electrónico y detecta spoofing, fallos de autentica
 - Semáforo visual de autenticación: SPF, DKIM, DMARC
 - Timeline de ruta de entrega con detección de servidores desconocidos e IPs privadas
 - Puntuación de spam con barra de progreso
+- Consulta de reputación de IPs con AbuseIPDB y VirusTotal
+- Extracción y análisis básico de URLs encontradas en el cuerpo del correo
+- Generación de reporte de seguridad
 - Soporte de archivos `.eml`, `.msg`, `.txt`, `.mht` con drag & drop
 - Cabecera raw colapsable para análisis manual
+- Documentación Swagger disponible en desarrollo y deshabilitada en producción
 
 ---
 
@@ -21,20 +26,32 @@ Analiza cabeceras de correo electrónico y detecta spoofing, fallos de autentica
 |---|---|
 | Backend | Python 3.12+ · FastAPI · Uvicorn |
 | Parser | Módulo `email` de la stdlib de Python |
+| Reputación | AbuseIPDB · VirusTotal |
 | Frontend | HTML · CSS · JavaScript vanilla |
+| Despliegue | Render |
 
 ---
 
 ## Estructura del proyecto
 
-```
+```text
 email-header-analyzer/
 ├── backend/
-│   ├── main.py           # API FastAPI — endpoint /analyze
-│   ├── parser.py         # Lógica de parseo de cabeceras
-│   └── requirements.txt  # Dependencias Python
+│   ├── main.py              # API FastAPI — endpoints /analyze y /report
+│   ├── parser.py            # Parseo de cabeceras, cuerpo y URLs
+│   ├── reputation.py        # Reputación de IPs con AbuseIPDB y VirusTotal
+│   ├── report.py            # Generación de reporte de seguridad
+│   ├── url_analyzer.py      # Análisis de URLs y consulta a VirusTotal
+│   └── requirements.txt     # Dependencias Python
 ├── frontend/
-│   └── index.html        # Interfaz web completa
+│   ├── index.html           # Interfaz web
+│   ├── css/
+│   │   └── styles.css       # Estilos de la interfaz
+│   └── js/
+│       ├── api.js           # Comunicación con el backend
+│       ├── main.js          # Lógica principal de la UI
+│       ├── render.js        # Renderizado de resultados
+│       └── upload.js        # Drag & drop y carga de archivos
 ├── .gitignore
 └── README.md
 ```
@@ -56,43 +73,117 @@ pip install -r requirements.txt
 python -m uvicorn main:app --reload
 ```
 
-El servidor arranca en `http://localhost:8000`.
-La documentación interactiva (Swagger) está en `http://localhost:8000/docs`.
+El servidor arranca en:
+
+```text
+http://localhost:8000
+```
+
+En desarrollo, la documentación interactiva está disponible en:
+
+```text
+http://localhost:8000/docs
+```
+
+### Variables de entorno del backend
+
+Para activar las consultas de reputación:
+
+```text
+ABUSEIPDB_KEY=<tu_api_key>
+VIRUSTOTAL_KEY=<tu_api_key>
+```
+
+Para producción:
+
+```text
+ENV=production
+```
+
+Cuando `ENV=production`, FastAPI deshabilita:
+
+```text
+/docs
+/redoc
+/openapi.json
+```
 
 ### Frontend
 
-Abre `frontend/index.html` directamente en el navegador, o sirve con:
+Abre `frontend/index.html` directamente en el navegador, o sirve el proyecto con:
 
 ```bash
 python -m http.server 5500
-# Abre: http://localhost:5500/frontend/index.html
+```
+
+Y abre:
+
+```text
+http://localhost:5500/frontend/index.html
 ```
 
 ---
 
 ## Despliegue en producción
 
-### Railway (recomendado)
+El proyecto está desplegado en Render con dos servicios separados:
 
-1. Crea una cuenta en [railway.app](https://railway.app)
-2. Conecta el repositorio de GitHub
-3. Railway detecta automáticamente FastAPI — configura el start command:
-   ```
-   uvicorn main:app --host 0.0.0.0 --port $PORT
-   ```
-4. Establece el directorio raíz en `backend`
-5. Despliega — Railway asigna una URL pública automáticamente
-6. Actualiza `API_URL` en `frontend/index.html` con la URL de Railway
+| Servicio | Tipo | URL |
+|---|---|---|
+| Frontend | Static Site | `https://email-header-analyzer-frontend.onrender.com/` |
+| Backend | Web Service · Python 3 | `https://email-header-analyzer-j40x.onrender.com/` |
 
-### Render
+Ambos servicios despliegan desde la rama:
 
-1. Crea un nuevo **Web Service** en [render.com](https://render.com)
-2. Conecta el repositorio
-3. Configura:
-   - **Root directory:** `backend`
-   - **Build command:** `pip install -r requirements.txt`
-   - **Start command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
-4. Despliega y actualiza `API_URL` en el frontend
+```text
+main
+```
+
+### Backend en Render
+
+Configuración recomendada:
+
+```text
+Root directory: backend
+Build command: pip install -r requirements.txt
+Start command: uvicorn main:app --host 0.0.0.0 --port $PORT
+```
+
+Variables de entorno necesarias:
+
+```text
+ABUSEIPDB_KEY=<api_key>
+VIRUSTOTAL_KEY=<api_key>
+ENV=production
+```
+
+### Frontend en Render
+
+El frontend debe apuntar al backend de producción desde `frontend/js/api.js`:
+
+```text
+https://email-header-analyzer-j40x.onrender.com
+```
+
+---
+
+## Seguridad
+
+En producción, la documentación pública de FastAPI está deshabilitada para reducir exposición de endpoints y esquemas internos.
+
+Comprobación esperada:
+
+```text
+GET https://email-header-analyzer-j40x.onrender.com/docs
+→ 404 Not Found
+```
+
+Los endpoints funcionales siguen disponibles para el frontend:
+
+```text
+POST /analyze
+POST /report
+```
 
 ---
 
@@ -102,30 +193,27 @@ python -m http.server 5500
 
 | Rama | Propósito |
 |---|---|
-| `main` | Código estable, listo para producción |
-| `develop` | Rama de integración, aquí se fusionan las features |
+| `main` | Código estable, desplegado en producción |
+| `feat/frontend-attachments` | Trabajo relacionado con análisis/visualización de adjuntos en frontend |
+| `feat/backend-attachments` | Trabajo relacionado con análisis de adjuntos en backend |
 | `feat/<nombre>` | Nueva funcionalidad |
-| `fix/<nombre>` | Corrección de bug |
+| `fix/<nombre>` | Corrección de bug o hardening |
+| `docs/<nombre>` | Cambios de documentación |
 
-**Flujo de trabajo:**
+### Flujo de trabajo
 
 ```bash
-# Crear una nueva feature
-git checkout develop
+git checkout main
+git pull origin main
+
 git checkout -b feat/nombre-de-la-feature
 
-# Trabajar, commitear...
+# Trabajar, probar y commitear
 git add .
 git commit -m "feat: descripción del cambio"
 
-# Fusionar de vuelta a develop
-git checkout develop
-git merge feat/nombre-de-la-feature
-
-# Cuando develop está estable, fusionar a main
-git checkout main
-git merge develop
-git push origin main
+# Subir rama y abrir PR contra main
+git push origin feat/nombre-de-la-feature
 ```
 
 ### Convención de commits
@@ -135,48 +223,59 @@ Seguimos [Conventional Commits](https://www.conventionalcommits.org/):
 | Prefijo | Cuándo usarlo |
 |---|---|
 | `feat:` | Nueva funcionalidad |
-| `fix:` | Corrección de bug |
+| `fix:` | Corrección de bug o mejora de seguridad |
 | `style:` | Cambios visuales sin lógica |
 | `refactor:` | Reestructuración de código |
 | `docs:` | Cambios en documentación |
-| `chore:` | Configuración, dependencias |
+| `chore:` | Configuración, dependencias o tareas auxiliares |
 
-**Ejemplos:**
-```
-feat: add delay calculation between hops
-fix: correct DMARC regex for subdomain policies
-docs: add deployment section to README
-style: improve verdict card contrast on dark screens
+Ejemplos:
+
+```text
+feat: add attachment metadata analysis
+fix: disable public API docs in production
+docs: update Render deployment instructions
+style: improve verdict card contrast
 ```
 
 ### Pull Requests
 
-- Toda feature debe ir en su propia rama
-- El PR debe apuntar a `develop`, nunca directamente a `main`
-- Incluye una descripción breve de qué cambia y por qué
-- El título del PR sigue la misma convención de commits
+- Toda feature o fix debe ir en su propia rama.
+- El PR debe apuntar a `main`.
+- Antes de fusionar, comprobar que Render despliega desde `main`.
+- Incluir una descripción breve de qué cambia y por qué.
+- El título del PR debe seguir Conventional Commits.
 
 ---
 
 ## Roadmap
 
 ### v0.2.0
+
 - [ ] Cálculo real de delays entre hops con alertas visuales
+- [ ] Análisis básico de adjuntos en `.eml`
+- [ ] Extracción de metadatos de adjuntos: nombre, tipo MIME, tamaño y hash SHA-256
+- [ ] Detección de extensiones peligrosas y dobles extensiones
 - [ ] Soporte completo de archivos `.msg` de Outlook con `extract-msg`
 - [ ] Exportar el análisis como PDF
 
 ### v0.3.0
-- [ ] Consulta de reputación de IP contra listas negras (Spamhaus, SORBS)
-- [ ] Historial de análisis guardado en base de datos (SQLite)
+
+- [ ] Consulta de hashes de adjuntos en VirusTotal
+- [ ] Consulta de reputación de IP contra listas negras adicionales
+- [ ] Historial de análisis guardado en base de datos SQLite
 - [ ] Modo oscuro / claro
 
 ### v1.0.0
+
 - [ ] Autenticación de usuarios
-- [ ] API pública documentada
+- [ ] API pública documentada para entornos controlados
 - [ ] Despliegue con Docker
+- [ ] Separación formal de entornos: desarrollo, staging y producción
 
 ---
 
 ## Licencia
 
 MIT © [astrosinfinitos](https://github.com/astrosinfinitos)
+```
