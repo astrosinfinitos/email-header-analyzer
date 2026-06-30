@@ -1,4 +1,5 @@
 import asyncio
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -7,7 +8,15 @@ from reputation import check_all_ips
 from report import generate_report
 from url_analyzer import analyze_all_urls
 
-app = FastAPI(title="Email Header Analyzer")
+env_name = os.getenv("ENV", os.getenv("APP_ENV", "development")).lower()
+is_production = env_name == "production"
+
+app = FastAPI(
+    title="Email Header Analyzer",
+    docs_url=None if is_production else "/docs",
+    redoc_url=None if is_production else "/redoc",
+    openapi_url=None if is_production else "/openapi.json",
+)
 
 app.add_middleware(
     CORSMiddleware,
