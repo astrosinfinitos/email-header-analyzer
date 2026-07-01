@@ -14,10 +14,15 @@ def determine_criticality(data: dict) -> str:
     reputation   = data.get("reputation", [])
     high_abuse   = any(r.get("abuseipdb", {}).get("score", 0) > 50 for r in reputation)
     vt_malicious = any(r.get("virustotal", {}).get("malicious", 0) > 3 for r in reputation)
+    urls          = data.get("urls", [])
+    high_urls     = sum(1 for u in urls if u.get("risk") == "high")
+    malicious_urls = any("vt_malicioso" in (u.get("flags") or []) for u in urls)
 
-    if fails >= 2 or high_abuse or vt_malicious:
+    severe_url_signal = malicious_urls or high_urls >= 2 or (high_urls > 0 and fails >= 1)
+
+    if fails >= 2 or high_abuse or vt_malicious or severe_url_signal:
         return "CRÍTICA"
-    elif fails == 1 or nones >= 2:
+    elif fails == 1 or nones >= 2 or high_urls > 0:
         return "ALTA"
     elif nones == 1:
         return "MEDIA"
@@ -34,10 +39,13 @@ def determine_threat_type(data: dict, criticality: str) -> str:
     reputation   = data.get("reputation", [])
     high_abuse   = any(r.get("abuseipdb", {}).get("score", 0) > 25 for r in reputation)
     vt_malicious = any(r.get("virustotal", {}).get("malicious", 0) > 0 for r in reputation)
+    urls          = data.get("urls", [])
+    high_urls     = any(u.get("risk") == "high" for u in urls)
+    malicious_urls = any("vt_malicioso" in (u.get("flags") or []) for u in urls)
 
     if criticality == "BAJA":
         return "Legítimo"
-    if vt_malicious:
+    if vt_malicious or high_urls or malicious_urls:
         return "Malware / Phishing"
     if high_abuse and (spf == "fail" or dkim == "fail"):
         return "Phishing"
@@ -61,17 +69,36 @@ def build_iocs(data: dict) -> list[str]:
             f"TOR: {'Sí' if abuse.get('is_tor') else 'No'}, "
             f"VirusTotal: {vt.get('malicious', 0)} motores maliciosos"
         )
+    for url in data.get("urls", []):
+        if url.get("risk") != "high" and "vt_malicioso" not in (url.get("flags") or []):
+            continue
+
+        vt = url.get("virustotal") or {}
+        flags = ", ".join(url.get("flags", [])) or "sin flags"
+        resolved = f", resuelta: {url['resolved_url']}" if url.get("resolved_url") else ""
+        vt_text = ""
+        if vt and vt.get("status") not in ("not_found", "skipped"):
+            vt_text = f", VirusTotal: {vt.get('malicious', 0)} motores maliciosos"
+
+        iocs.append(
+            f"URL {url.get('url', '—')} — Riesgo: {url.get('risk', 'unknown').upper()}, "
+            f"Dominio: {url.get('domain', '—')}, Flags: {flags}{resolved}{vt_text}"
+        )
     return iocs
 
 
-def build_recommendations(criticality: str, threat_type: str) -> list[str]:
+def build_recommendations(criticality: str, threat_type: str, data: dict | None = None) -> list[str]:
     base = [
         "Revisar y validar el contenido del reporte antes de su uso oficial.",
         "Actualizar los datos de identificación según los procedimientos internos.",
     ]
+    risky_urls = any(
+        u.get("risk") == "high" or "vt_malicioso" in (u.get("flags") or [])
+        for u in (data or {}).get("urls", [])
+    )
 
     if criticality in ("CRÍTICA", "ALTA"):
-        return base + [
+        recs = base + [
             "Poner en cuarentena el correo inmediatamente.",
             "Bloquear las IPs identificadas en el firewall perimetral.",
             "Notificar al usuario afectado y al equipo de seguridad.",
@@ -79,12 +106,18 @@ def build_recommendations(criticality: str, threat_type: str) -> list[str]:
             "Revisar si otros usuarios han recibido correos similares.",
             "Iniciar proceso de respuesta a incidentes según el playbook.",
         ]
+        if risky_urls:
+            recs.insert(3, "Bloquear o revisar los dominios y URLs sospechosas identificadas.")
+        return recs
     elif criticality == "MEDIA":
-        return base + [
+        recs = base + [
             "Marcar el correo como sospechoso y notificar al usuario.",
             "Monitorizar actividad adicional desde las IPs identificadas.",
             "Verificar si el dominio remitente es legítimo.",
         ]
+        if risky_urls:
+            recs.append("Validar manualmente los enlaces detectados antes de permitir su acceso.")
+        return recs
     else:
         return base + [
             "No se requieren acciones de contención.",
@@ -97,17 +130,23 @@ def generate_report(data: dict) -> dict:
     criticality = determine_criticality(data)
     threat_type = determine_threat_type(data, criticality)
     iocs        = build_iocs(data)
-    recs        = build_recommendations(criticality, threat_type)
+    recs        = build_recommendations(criticality, threat_type, data)
 
     auth  = data.get("auth", {})
     hops  = data.get("hops", [])
+    urls  = data.get("urls", [])
 
     additional = [
         f"SPF: {auth.get('spf', 'none').upper()}",
         f"DKIM: {auth.get('dkim', 'none').upper()}",
         f"DMARC: {auth.get('dmarc', 'none').upper()}",
         f"Número de hops: {len(hops)}",
+        f"Enlaces detectados: {len(urls)}",
     ]
+    high_urls = sum(1 for u in urls if u.get("risk") == "high")
+    medium_urls = sum(1 for u in urls if u.get("risk") == "medium")
+    if high_urls or medium_urls:
+        additional.append(f"Enlaces de riesgo: {high_urls} alto(s), {medium_urls} medio(s)")
     if data.get("spam_score"):
         additional.append(f"Spam score: {data['spam_score']}")
 
@@ -120,7 +159,7 @@ DESCRIPCIÓN:
 Análisis forense del correo electrónico recibido por {data.get('to', '—')} con asunto "{data.get('subject', '—')}". \
 El remitente identificado es {data.get('from', '—')}. \
 {"Se han detectado fallos en los mecanismos de autenticación del correo." if criticality != "BAJA" else "Los mecanismos de autenticación del correo han superado todas las verificaciones."} \
-{"Se han identificado IPs con reputación negativa en la ruta de entrega." if iocs else "No se han identificado IPs con reputación negativa."}
+{"Se han identificado IPs o enlaces con señales de riesgo." if iocs else "No se han identificado indicadores de compromiso relevantes."}
 
 INDICADORES DE COMPROMISO:
 {chr(10).join(f"- {ioc}" for ioc in iocs) if iocs else "- No se han identificado indicadores de compromiso."}
