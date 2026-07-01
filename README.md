@@ -1,7 +1,8 @@
-```markdown
 # Email Header Analyzer
 
 Analiza cabeceras de correo electrónico y detecta spoofing, fallos de autenticación, rutas sospechosas, reputación de IPs y URLs potencialmente peligrosas. Ofrece un veredicto visual inmediato con desglose de SPF, DKIM, DMARC, hops, reputación y reporte de seguridad.
+
+**Versión actual:** `v0.0.1`
 
 ---
 
@@ -248,6 +249,29 @@ style: improve verdict card contrast
 
 ---
 
+## Historial de versiones
+
+### v0.0.1
+
+Primera versión funcional del analizador de cabeceras de correo.
+
+- Backend FastAPI con endpoints `POST /analyze` y `POST /report`
+- Parseo de cabeceras, cuerpo y URLs en correos `.eml`, `.msg`, `.txt` y `.mht`
+- Veredicto de seguridad `LEGÍTIMO`, `SOSPECHOSO` o `PELIGROSO`
+- Evaluación visual de SPF, DKIM y DMARC
+- Timeline de ruta de entrega con detección de servidores desconocidos e IPs privadas
+- Puntuación de spam con barra de progreso
+- Consulta opcional de reputación de IPs con AbuseIPDB y VirusTotal
+- Análisis básico de URLs con VirusTotal cuando hay API key configurada
+- Generación de reporte de seguridad
+- Frontend HTML, CSS y JavaScript vanilla con carga drag & drop
+- Cabecera raw colapsable para análisis manual
+- Configuración de producción con Swagger, Redoc y OpenAPI deshabilitados mediante `ENV=production`
+- Despliegue documentado en Render para frontend y backend
+- Licencia source-available de uso no comercial
+
+---
+
 ## Roadmap
 
 ### v0.2.0
@@ -288,5 +312,3 @@ Para usos comerciales, integraciones empresariales, servicios gestionados, redis
 Copyright © 2026 [astrosinfinitos](https://github.com/astrosinfinitos). Todos los derechos reservados para usos comerciales.
 
 El software se proporciona "tal cual", sin garantías de ningún tipo.
-
-```
