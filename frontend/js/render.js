@@ -14,6 +14,31 @@ function authClass(val) {
   if (val === 'softfail') return 'warn';
   return 'none';
 }
+
+function urlFlagLabel(flag) {
+  const flagLabels = {
+    url_acortada:           'URL acortada',
+    ip_directa:             'IP directa',
+    numeros_en_dominio:     'Números en dominio',
+    multiples_subdominios:  'Múltiples subdominios',
+    tld_sospechoso:         'TLD sospechoso',
+    http_sin_tls:           'HTTP sin TLS',
+    usuario_en_url:         'Usuario en URL',
+    puerto_no_estandar:     'Puerto no estándar',
+    dominio_punycode:       'Dominio punycode',
+    dominio_muy_largo:      'Dominio muy largo',
+    path_sospechoso:        'Ruta sensible',
+    resuelta:               'URL resuelta',
+    vt_malicioso:           'VirusTotal: malicioso',
+    vt_sospechoso:          'VirusTotal: sospechoso',
+  };
+
+  if (flag.startsWith('redireccion_en_params:')) {
+    return `Redirección en parámetro ${flag.split(':')[1]}`;
+  }
+
+  return flagLabels[flag] || flag;
+}
  
 /* ── N1: Veredicto ── */
 function renderVerdict(data) {
@@ -25,6 +50,10 @@ function renderVerdict(data) {
   const spamMatch = (data.spam_score || '').match(/-?[\d.]+/);
   const spamScore = spamMatch ? parseFloat(spamMatch[0]) : null;
   const isSpam    = spamScore !== null && spamScore > 3;
+  const urls       = data.urls || [];
+  const highUrls   = urls.filter(u => u.risk === 'high').length;
+  const mediumUrls = urls.filter(u => u.risk === 'medium').length;
+  const vtMaliciousUrls = urls.filter(u => (u.flags || []).includes('vt_malicioso')).length;
  
   const fails     = [spf, dkim, dmarc].filter(v => v === 'fail').length;
   const passes    = [spf, dkim, dmarc].filter(v => v === 'pass').length;
@@ -33,9 +62,11 @@ function renderVerdict(data) {
  
   let level, label, reasons = [];
  
-  if (fails >= 1 || isSpam) {
+  const severeUrlSignal = vtMaliciousUrls > 0 || highUrls >= 2 || (highUrls > 0 && (fails >= 1 || isSpam));
+
+  if (fails >= 1 || isSpam || severeUrlSignal) {
     level = 'bad';  label = 'PELIGROSO';
-  } else if (softfails >= 1 || nones >= 2) {
+  } else if (softfails >= 1 || nones >= 2 || highUrls > 0) {
     level = 'warn'; label = 'SOSPECHOSO';
   } else if (nones === 1) {
     level = 'warn'; label = 'INDETERMINADO';
@@ -55,6 +86,8 @@ function renderVerdict(data) {
   if (dkim  === 'none')     reasons.push('⚠ DKIM no configurado');
   if (dmarc === 'none')     reasons.push('⚠ DMARC no configurado');
   if (spamScore !== null)   reasons.push(`Score spam: ${spamScore}`);
+  if (highUrls > 0)         reasons.push(`${highUrls} enlace(s) de riesgo alto`);
+  if (!highUrls && mediumUrls > 0) reasons.push(`${mediumUrls} enlace(s) de riesgo medio detectado(s)`);
  
   const card = document.getElementById('verdict-card');
   card.className = `verdict-card ${level}`;
@@ -93,6 +126,17 @@ function renderSignals(data) {
   const hopCount = (data.hops || []).length;
   const hopCls   = hopCount <= 3 ? 'ok' : hopCount <= 6 ? 'warn' : 'bad';
   const hopNote  = hopCount <= 3 ? 'Ruta normal' : hopCount <= 6 ? 'Ruta larga' : 'Ruta inusual';
+  const urls      = data.urls || [];
+  const highUrls  = urls.filter(u => u.risk === 'high').length;
+  const mediumUrls = urls.filter(u => u.risk === 'medium').length;
+  const urlCls    = highUrls > 0 ? 'bad' : mediumUrls > 0 ? 'warn' : urls.length ? 'ok' : 'none';
+  const urlNote   = highUrls > 0
+    ? `${highUrls} riesgo alto`
+    : mediumUrls > 0
+      ? `${mediumUrls} riesgo medio`
+      : urls.length
+        ? 'Sin señales críticas'
+        : 'Sin enlaces';
  
   document.getElementById('signal-grid').innerHTML =
     protos.map(p => {
@@ -109,6 +153,11 @@ function renderSignals(data) {
       <div class="signal-proto">Hops</div>
       <div class="signal-val">${hopCount}</div>
       <div class="signal-note">${hopNote}</div>
+    </div>` +
+    `<div class="signal-item ${urlCls}">
+      <div class="signal-proto">Enlaces</div>
+      <div class="signal-val">${urls.length}</div>
+      <div class="signal-note">${urlNote}</div>
     </div>`;
 }
  
@@ -222,17 +271,6 @@ function renderUrls(data) {
   const riskLabel = { low: 'BAJO', medium: 'MEDIO', high: 'ALTO' };
   const riskClass = { low: 'ok', medium: 'warn', high: 'bad' };
 
-  const flagLabels = {
-    url_acortada:           'URL acortada',
-    ip_directa:             'IP directa',
-    numeros_en_dominio:     'Números en dominio',
-    multiples_subdominios:  'Múltiples subdominios',
-    tld_sospechoso:         'TLD sospechoso',
-    resuelta:               'URL resuelta',
-    vt_malicioso:           'VirusTotal: malicioso',
-    vt_sospechoso:          'VirusTotal: sospechoso',
-  };
-
   const card = document.createElement('div');
   card.className = 'card';
   card.id = 'urls-card';
@@ -242,6 +280,7 @@ function renderUrls(data) {
       ${urls.map(u => {
         const cls = riskClass[u.risk] || 'none';
         const vt  = u.virustotal;
+        const flags = u.flags || [];
         return `
           <div class="url-item ${cls}">
             <div class="url-head">
@@ -250,10 +289,10 @@ function renderUrls(data) {
             </div>
             <div class="url-raw">${esc(u.url)}</div>
             ${u.resolved_url ? `<div class="url-resolved">→ ${esc(u.resolved_url)}</div>` : ''}
-            ${u.flags.length ? `
+            ${flags.length ? `
               <div class="url-flags">
-                ${u.flags.map(f => `
-                  <span class="url-flag">${flagLabels[f] || f}</span>
+                ${flags.map(f => `
+                  <span class="url-flag">${esc(urlFlagLabel(f))}</span>
                 `).join('')}
               </div>` : ''}
             ${vt && !vt.error && vt.status !== 'not_found' ? `
