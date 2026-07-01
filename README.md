@@ -277,7 +277,7 @@ Primera versión funcional del analizador de cabeceras de correo.
 ### v0.2.0
 
 - [ ] Cálculo real de delays entre hops con alertas visuales
-  ✅ Comprobador de enlaces dentro del correo
+- ✅ Comprobador de enlaces dentro del correo
 - [ ] Análisis básico de adjuntos en `.eml`
 - [ ] Extracción de metadatos de adjuntos: nombre, tipo MIME, tamaño y hash SHA-256
 - [ ] Detección de extensiones peligrosas y dobles extensiones
