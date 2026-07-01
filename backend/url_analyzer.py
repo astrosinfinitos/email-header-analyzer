@@ -11,7 +11,7 @@ load_dotenv()
 
 VIRUSTOTAL_KEY = os.getenv("VIRUSTOTAL_KEY")
 VIRUSTOTAL_URL = "https://www.virustotal.com/api/v3/urls"
-MAX_URLS_TO_ANALYZE = 10
+MAX_URLS_TO_ANALYZE = 50
 MAX_VIRUSTOTAL_LOOKUPS = 4
 
 # Servicios de acortamiento para resolver
